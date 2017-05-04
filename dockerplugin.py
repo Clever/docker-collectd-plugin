@@ -33,6 +33,7 @@ import threading
 import time
 from calendar import timegm
 from distutils.version import StrictVersion
+import psutil
 
 COLLECTION_INTERVAL = 10
 
@@ -114,6 +115,20 @@ def emit(container, dimensions, point_type, value, t=None,
     val.values = value
     val.dispatch()
 
+def read_open_sockets(container, dimensions, stats, t):
+    cpid = container["Inspect"]['State']['Pid']
+    cpids = psutil.Process(cpid).children(recursive=True)
+    s = 0
+    for pid in cpids:
+        fd_dir = "{}/{}/fd".format(psutil.PROCFS_PATH, pid.pid)
+        for fd in os.listdir(fd_dir):
+            # fd can be closed between listdir and readlink
+            try:
+                if "socket" in os.readlink("{}/{}".format(fd_dir, fd)):
+                    s += 1
+            except OSError as e:
+                continue
+    emit(container, dimensions, 'open_sockets', [s])
 
 def read_blkio_stats(container, dimensions, stats, t):
     """Process block I/O stats for a container."""
@@ -392,7 +407,7 @@ class DockerPlugin:
 
     # TODO: add support for 'networks' from API >= 1.20 to get by-iface stats.
     METHODS = [read_network_stats, read_blkio_stats, read_cpu_stats,
-               read_memory_stats]
+               read_memory_stats, read_open_sockets]
 
     def __init__(self, docker_url=None):
         self.docker_url = docker_url or DockerPlugin.DEFAULT_BASE_URL
@@ -514,6 +529,7 @@ class DockerPlugin:
 
                 cstats = self.stats[container['Id']]
                 stats = cstats.stats
+                container["Inspect"] = self.client.inspect_container(container['Id'])
                 read_at = stats.get('read') if stats else None
                 if not read_at:
                     # No stats available yet; skipping container.

@@ -120,7 +120,7 @@ def read_open_sockets(container, dimensions, stats, t):
     cpids = psutil.Process(cpid).children(recursive=True)
     s = 0
     for pid in cpids:
-        fd_dir = "{}/{}/fd".format(psutil.PROCFS_PATH, pid.pid)
+        fd_dir = "{}/{}/fd".format('/mnt/proc', pid.pid)
         for fd in os.listdir(fd_dir):
             # fd can be closed between listdir and readlink
             try:

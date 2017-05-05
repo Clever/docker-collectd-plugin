@@ -128,7 +128,7 @@ def read_open_sockets(container, dimensions, stats, t):
                     s += 1
             except OSError as e:
                 continue
-    emit(container, dimensions, 'open_sockets', [s])
+    emit(container, dimensions, 'custom.open_sockets', [s])
 
 def read_blkio_stats(container, dimensions, stats, t):
     """Process block I/O stats for a container."""

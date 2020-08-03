@@ -1,4 +1,4 @@
 py-dateutil
 docker-py>=1.0.0
 jsonpath_rw
-psutil==5.2.2
+psutil==5.6.6
